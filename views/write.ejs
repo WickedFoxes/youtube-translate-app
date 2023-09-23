@@ -1,0 +1,304 @@
+<div class="main">
+    <div class="" style="width: 100%">
+        <div class="row" style="margin:20px 0">
+            <div class="col-12 col-md-6">
+                <!--youtube player-->
+                <div id="player"></div>
+                <script>
+                    // 2. This code loads the IFrame Player API code asynchronously.
+                    var tag = document.createElement('script');
+
+                    tag.src = "https://www.youtube.com/iframe_api";
+                    var firstScriptTag = document.getElementsByTagName('script')[0];
+                    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+                    // 3. This function creates an <iframe> (and YouTube player)
+                    //    after the API code downloads.
+                    var player;
+                    function onYouTubeIframeAPIReady() {
+                    player = new YT.Player('player', {
+                        // height: '900px',
+                        width: '100%',
+                        videoId: '<%=videoid%>',
+                    });
+                    }
+
+                    // 4. The API will call this function when the video player is ready.
+                    function onPlayerReady(event) {
+                    event.target.playVideo();
+                    }
+
+                    // 5. The API calls this function when the player's state changes.
+                    //    The function indicates that when playing a video (state=1),
+                    //    the player should play for six seconds and then stop.
+                    var done = false;
+                    function onPlayerStateChange(event) {
+                    if (event.data == YT.PlayerState.PLAYING && !done) {
+                        setTimeout(stopVideo, 6000);
+                        done = true;
+                    }
+                    }
+                    function stopVideo() {
+                    player.stopVideo();
+                    }
+                </script>
+            </div>
+            <div class="col-12 col-md-6">
+                <!--table header-->
+                <div class="tittle-header" style="margin:5px 0">
+                    <div class="col">
+                        <button type="button" class="upload btn btn-secondary" onclick="upload_video_info()">upload</button>
+                        <button type="button" id="filesave" class="btn btn-secondary">excel_save</button>
+                        <button type="button" id="fileload" onclick="openCSVFile();" class="btn btn-secondary">excel_load</button>
+                        <input type="button" id="original_btn" class="btn btn-success" value="original" onclick="change_table_mode_to_original()">
+                        <input type="button" id="translate_btn" class="btn btn-primary" value="translate" onclick="change_table_mode_to_translate()">
+                        <input type="button" id="pronunce_btn" class="btn btn-primary" value="pronunce" onclick="change_table_mode_to_pronunce()">
+                    </div>
+                    <div class="col">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="basic-addon1">#</span>
+                            <input type="text" class="tag_input_text form-control" aria-describedby="basic-addon1" value="<%for(let i=0; i<tags.length; i++){%><%=tags[i].tag%><%if(i<tags.length-1){%> <%}%><%}%>">
+                          </div>
+                    </div>
+                </div>
+                <!--table-->
+                <div class="table list-group">
+                    <%if(translate.length == 0){%>
+                    <%-makeTranslateElement('', '', '', '')%>
+                    <%}%>
+                    <%for(tl of translate){%>
+                    <%-makeTranslateElement(tl.timeline, tl.original, tl.translate, tl.pronunce)%>
+                    <%}%>
+                </div>
+                <div class="row">
+                    <div class="col-12 col-xs-12 col-sm-12 col-md-12">
+                        <button type="button" class="btn btn-default" onclick="window.location.href='/board?mode=write'">back to board</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript" src="http://code.jquery.com/jquery-latest.js"></script>
+<script>
+function sendAjax(url, obj_data, type) {
+    var data = JSON.stringify(obj_data);
+
+    //data에 inputdata를 json형식으로 넣고 이를 xmlhttprequest를 통해 post방식으로 보냅니다.
+    var xhr = new XMLHttpRequest();
+    xhr.open(type, url);
+    xhr.setRequestHeader('Content-type', "application/json");
+    xhr.send(data);
+
+    //서버에서 결과가 도착하면 그것을 result div에 입력합니다.
+    xhr.addEventListener('load', function () {
+        console.log(xhr.responseText);
+    });
+}
+function upload_video_info(){
+    delete_translate_and_tag();
+    upload_translate();
+    upload_video_tag();
+    location.reload();
+}
+function delete_translate_and_tag() {
+    var data = { 'videoid': '<%=videoid%>' };
+    sendAjax('/write/ajax', data, 'delete');
+}
+function upload_video_tag(){
+    let item_list = document.querySelector(".tag_input_text").value.split(" ");
+    for(item of item_list){
+        let data = {'videoid' : '<%=videoid%>'};
+        data['tag'] = item;
+        console.log(data);
+        sendAjax('/write/ajax', data, 'put');
+    }
+}
+function upload_translate(){
+    for(item of document.querySelectorAll('.list-group-item')){
+        let data = {'videoid' : '<%=videoid%>'};
+        data['timeline'] = item.querySelector('.timelne_textarea').value;
+        data['original'] = item.querySelector('.original_textarea').value;
+        data['translate'] = item.querySelector('.translate_textarea').value;
+        data['pronunce'] = item.querySelector('.pronunce_textarea').value;
+        sendAjax('/write/ajax', data, 'post');
+    }
+}
+// 자막 편집 기능
+// 자막 추가
+$(document).on('click','button.add_button',function(e){
+        var sub = $(this).parent().parent().parent();
+        sub.after(sub.clone());
+    });
+// 자막 삭제
+$(document).on('click','button.del_button', function(e){
+    if($('.list-group-item').length > 1){
+        var sub = $(this).parent().parent().parent();
+        sub.remove();
+    }
+});
+// sub 버튼 누르면 시간 자동 추가
+$(document).on('click','button.time_save_button',function(e){
+    var sub = $(this).parent().parent().parent()[0];
+    sub.querySelector('.timelne_textarea').value = get_timeline(player.getCurrentTime());
+});
+// 영상, 자막 가져오기
+var table_reset = function(){
+    // reset the table
+    let len = document.querySelectorAll(".list-group-item").length;
+    for(let i=1; i<len; i++){
+        document.querySelectorAll(".list-group-item")[1].remove();
+    }
+    let item = document.querySelector(".list-group-item");
+    item.querySelector('.timelne_textarea').value = '';
+    item.querySelector('.original_textarea').value = '';
+    item.querySelector('.translate_textarea').value = '';
+    item.querySelector('.pronunce_textarea').value = '';
+}
+
+// 타임라인 이동
+$(document).on('click','button.timeline_button',function(){
+    var timeline = $(this)[0].parentElement.parentElement.parentElement.querySelector('textarea').value;
+    player.seekTo(get_time(timeline));
+});
+// 타임 얻기
+function get_time(timeline) {
+    var secArray = timeline.split(':');
+    if (secArray.length == 2) {
+        return 60 * parseInt(secArray[0]) + parseInt(secArray[1]);
+    }
+    if(secArray.length == 3) {
+        return 60 * 60 * parseInt(secArray[0]) + 60 * parseInt(secArray[1]) + parseInt(secArray[2]);
+    }
+}
+// 타임라인 얻기
+function get_timeline(time){
+    var sec = "" + parseInt(time%60);
+    var min = "" + parseInt((time - parseInt(time/3600)*3600)/60);
+    var hour = "" + parseInt(time/3600);
+    sec = ('00' + sec).slice(-2);
+    if (time < 60) {
+        return "00:" + sec;
+    }
+    else if(time < 60*60) {
+        return "" + min + ":" + sec;
+    }
+    else{
+        min = ('00' + min).slice(-2);
+        return "" + hour + ":" + min + ":" + sec;
+    }
+}
+
+// 문자열 \n 변형
+function remove_comma_and_newline(string) {
+    return string.replaceAll(',', '').replaceAll('\n', '').replaceAll('\r', '');
+}
+
+// 파일 저장, 불러오기
+$("#filesave").click(function () {
+    let filename = "<%=videoid%>.csv";
+    getCSV(filename);
+});
+function getCSV(filename) {
+    var csv = [];
+    var row = [];
+
+    //1열에는 컬럼명
+    row.push("timeline", "original", "translate", "pronunce");
+    csv.push(row.join(","));
+
+    let items = document.querySelectorAll(".list-group-item");
+    for(item of items){
+        let timeline_value = remove_comma_and_newline(item.querySelector('.timelne_textarea').value);
+        let original_value = remove_comma_and_newline(item.querySelector('.original_textarea').value);
+        let translate_value = remove_comma_and_newline(item.querySelector('.translate_textarea').value);
+        let pronunce_value = remove_comma_and_newline(item.querySelector('.pronunce_textarea').value);
+        if(!timeline_value && !original_value && !translate_value && pronunce_value) continue;
+        row = [timeline_value, original_value, translate_value, pronunce_value];
+        csv.push(row.join(","));
+    }
+    downloadCSV(csv.join("\n"), filename);
+}
+function downloadCSV(csv, filename) {
+    var csvFile;
+    var downloadLink;
+
+    //한글 처리를 해주기 위해 BOM 추가하기
+    const BOM = "\uFEFF";
+    csv = BOM + csv;
+
+    csvFile = new Blob([csv], {type: "text/csv"});
+    downloadLink = document.createElement("a");
+    downloadLink.download = filename;
+    downloadLink.href = window
+        .URL
+        .createObjectURL(csvFile);
+    downloadLink.style.display = "none";
+    document
+        .body
+        .appendChild(downloadLink);
+    downloadLink.click();
+}
+function openCSVFile() {
+    var input = document.createElement("input");
+    input.type = "file";
+    input.accept = "text/csv"; // 확장자가 xxx, yyy 일때, ".xxx, .yyy"
+    input.onchange = function (event) {
+        processFile(event.target.files[0]);
+    };
+    input.click();
+}
+function processFile(file){
+    var reader = new FileReader();
+    reader.onload = function () {
+        table_reset();
+        //load subtittle & timeline
+        let file_text = reader.result;
+        var list = file_text.replaceAll('\r', '').split('\n');
+        // console.log(list);
+        list.forEach(function(item, index){
+            // get table
+            if(index>0 && item){
+                var tb_list = item.split(',');
+                let table_item = document.querySelector(".list-group-item");
+                table_item.querySelector('.timelne_textarea').value = tb_list[0];
+                table_item.querySelector('.original_textarea').value = tb_list[1];
+                table_item.querySelector('.translate_textarea').value = tb_list[2];
+                table_item.querySelector('.pronunce_textarea').value = tb_list[3];
+                document.querySelector('.table').append(table_item.cloneNode(true));
+            }
+        });
+        document.querySelector(".list-group-item").remove();
+    }
+    reader.readAsText(file,"euc-kr");
+}
+var prev_playtime = 0;
+var new_playtime, focus, active;
+
+var autoPlay = function(){
+    // 동영상이 재생 중 일 때
+    new_playtime = parseInt(player.getCurrentTime());
+    if(prev_playtime != new_playtime){
+        //prev_playtime 갱신
+        prev_playtime = new_playtime;
+        
+        // 스크롤 이동 & 색상 표시
+        $("textarea.timelne_textarea").each(function (index, item) {
+            if(get_time(item.value) == new_playtime){
+                if(document.querySelectorAll('.active').length > 0){
+                    active = document.querySelector('.active');
+                    focus.setAttribute('style', '');
+                    active.classList.remove('active');
+                }
+                let top = document.querySelector(".list-group-item").offsetTop;
+                let height = document.querySelector(".list-group-item").offsetHeight;
+                focus = item.parentElement.parentElement.parentElement;
+                focusTime = item.parentElement.parentElement.parentElement.offsetTop;
+                document.querySelector(".table").scrollTop = focusTime - top - height*2;
+                focus.classList.add('active');
+            };
+        });
+    }
+}
+setInterval(function(){autoPlay();},100);
+</script>

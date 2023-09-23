@@ -1,0 +1,122 @@
+<div class="main">
+    <div class="" style="width: 100%">
+        <div class="row" style="margin:20px 0">
+            <div class="col-12 col-md-6">
+                <!--youtube player-->
+                <div id="player"></div>
+                <script>
+                    // 2. This code loads the IFrame Player API code asynchronously.
+                    var tag = document.createElement('script');
+
+                    tag.src = "https://www.youtube.com/iframe_api";
+                    var firstScriptTag = document.getElementsByTagName('script')[0];
+                    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+                    // 3. This function creates an <iframe> (and YouTube player)
+                    //    after the API code downloads.
+                    var player;
+                    function onYouTubeIframeAPIReady() {
+                    player = new YT.Player('player', {
+                        // height: '900px',
+                        width: '100%',
+                        videoId: '<%=videoid%>',
+                    });
+                    }
+
+                    // 4. The API will call this function when the video player is ready.
+                    function onPlayerReady(event) {
+                    event.target.playVideo();
+                    }
+
+                    // 5. The API calls this function when the player's state changes.
+                    //    The function indicates that when playing a video (state=1),
+                    //    the player should play for six seconds and then stop.
+                    var done = false;
+                    function onPlayerStateChange(event) {
+                    if (event.data == YT.PlayerState.PLAYING && !done) {
+                        setTimeout(stopVideo, 6000);
+                        done = true;
+                    }
+                    }
+                    function stopVideo() {
+                    player.stopVideo();
+                    }
+                </script>
+            </div>
+            <div class="col-12 col-md-6">
+                <!--table header-->
+                <div class="tittle-header" style="margin:5px 0">
+                    <input type="button" id="original_btn" class="btn btn-success" value="original" onclick="change_table_mode_to_original()">
+                    <input type="button" id="translate_btn" class="btn btn-primary" value="translate" onclick="change_table_mode_to_translate()">
+                    <input type="button" id="pronunce_btn" class="btn btn-primary" value="pronunce" onclick="change_table_mode_to_pronunce()">
+                </div>
+                <!--table-->
+                <div class="table list-group">
+                    <%for(tl of translate){%>
+                    <div class="list-group-item">
+                        <div class="row">
+                            <div class="time_load_button_block col-auto">
+                                <button type="button" class="timeline_button btn no-padding">▶️</button>
+                            </div>
+                            <div class="timelne_textarea_block col-2">
+                                <%=tl.timeline%>
+                            </div>
+                            <div class="original_textarea_block col" >
+                                <%=tl.original%>
+                            </div>
+                            <div class="translate_textarea_block col" style="display:none;">
+                                <%=tl.translate%>
+                            </div>
+                            <div class="pronunce_textarea_block col" style="display:none;">
+                                <%=tl.pronunce%>
+                            </div>
+                        </div>
+                    </div>
+                    <%}%>
+                </div>
+                <div class="row">
+                    <div class="col-12 col-xs-12 col-sm-12 col-md-12">
+                        <button type="button" class="btn btn-default" onclick="window.location.href='/board'">back to board</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript" src="http://code.jquery.com/jquery-latest.js"></script>
+<script>
+// 타임라인 이동
+$(document).on('click','button.timeline_button',function(){
+    var timeline = $(this)[0].parentElement.parentElement.parentElement.querySelector('.timelne_textarea_block').innerText;
+    player.seekTo(get_time(timeline));
+});
+var prev_playtime = 0;
+var new_playtime, focus, active;
+
+var autoPlay = function(){
+    // 동영상이 재생 중 일 때
+    new_playtime = parseInt(player.getCurrentTime());
+    if(prev_playtime != new_playtime){
+        //prev_playtime 갱신
+        prev_playtime = new_playtime;
+        
+        // 스크롤 이동 & 색상 표시
+        $(".timelne_textarea_block").each(function (index, item) {
+            if(get_time(item.innerText) == new_playtime){
+                if(document.querySelectorAll('.active').length > 0){
+                    active = document.querySelector('.active');
+                    focus.setAttribute('style', '');
+                    active.classList.remove('active');
+                }
+                let top = document.querySelector(".list-group-item").offsetTop;
+                let height = document.querySelector(".list-group-item").offsetHeight;
+                focus = item.parentElement.parentElement;
+                focusTime = item.parentElement.parentElement.offsetTop;
+                document.querySelector(".table").scrollTop = focusTime - top - height*2;
+                focus.classList.add('active');
+            };
+        });
+    }
+}
+setInterval(function(){autoPlay();},100);
+</script>

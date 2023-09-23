@@ -1,0 +1,38 @@
+<div class="main">
+    <div class="container">
+        <div class="search-box" style="margin: 20px 0">
+            <form action="/board">
+                <% if(mode == "write"){ %>
+                <%- makeWriteModeSearchForm(search); %>
+                <%} else{%>
+                <%- makeViewModeSearchForm(search); %>
+                <%} %>
+            </form>
+            <% for(tag of tags){%>
+            <%-makeTagElement(tag)%>
+            <%}%>
+        </div>
+        <div class="row">
+        <% if(mode == "write"){%>
+            <% for(info of video_info){ %>
+                <%- makeWriteElement(info.videoid, info.title, video_tag[info.videoid]); %>
+            <% } %>
+        <%} else {%>
+            <% for(info of video_info){ %>
+                <%- makeVideoElement(info.videoid, info.title, video_tag[info.videoid]); %>
+            <% } %>
+        <%}%>
+        </div>
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+              <li class="page-item">
+                <a class="page-link" href="board?page=<%=page*1-1%><%if(search){%>&search=<%=search%><%}%><%if(mode){%>&mode=<%=mode%><%}%>">←</a>
+              </li>
+              <li class="page-item"><div class="page-link" href="#"><%=page%></div></li>
+              <li class="page-item">
+                <a class="page-link" href="board?page=<%=page*1+1%><%if(search){%>&search=<%=search%><%}%><%if(mode){%>&mode=<%=mode%><%}%>">→</a>
+              </li>
+            </ul>
+        </nav>
+    </div>
+</div>
