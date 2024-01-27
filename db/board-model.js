@@ -47,7 +47,7 @@ async function get_video_info(page){
 }
 
 async function get_video_info_by_search(page, search){
-    let search_list = '\"'+search.replaceAll(' ', '","')+'\"';
+    let search_list = '\"'+search.replace(/ /g, '","')+'\"';
     let sql = 'select * '
         + 'from video_info '
         + 'where videoid in '
