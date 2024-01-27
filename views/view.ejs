@@ -93,6 +93,14 @@ $(document).on('click','button.timeline_button',function(){
 var prev_playtime = 0;
 var new_playtime, focus, active;
 
+function clear_active(){
+    actives = document.querySelectorAll('.active');
+    for(active of actives){
+        active.setAttribute('style', '');
+        active.classList.remove('active');
+    }
+}
+
 var autoPlay = function(){
     // 동영상이 재생 중 일 때
     new_playtime = parseInt(player.getCurrentTime());
@@ -103,15 +111,12 @@ var autoPlay = function(){
         // 스크롤 이동 & 색상 표시
         $(".timelne_textarea_block").each(function (index, item) {
             if(get_time(item.innerText) == new_playtime){
-                if(document.querySelectorAll('.active').length > 0){
-                    active = document.querySelector('.active');
-                    focus.setAttribute('style', '');
-                    active.classList.remove('active');
-                }
-                let top = document.querySelector(".list-group-item").offsetTop;
-                let height = document.querySelector(".list-group-item").offsetHeight;
                 focus = item.parentElement.parentElement;
                 focusTime = item.parentElement.parentElement.offsetTop;
+
+                clear_active()
+                let top = document.querySelector(".list-group-item").offsetTop;
+                let height = document.querySelector(".list-group-item").offsetHeight;
                 document.querySelector(".table").scrollTop = focusTime - top - height*2;
                 focus.classList.add('active');
             };

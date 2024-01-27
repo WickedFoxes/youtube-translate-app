@@ -275,6 +275,14 @@ function processFile(file){
 var prev_playtime = 0;
 var new_playtime, focus, active;
 
+function clear_active(){
+    actives = document.querySelectorAll('.active');
+    for(active of actives){
+        active.setAttribute('style', '');
+        active.classList.remove('active');
+    }
+}
+
 var autoPlay = function(){
     // 동영상이 재생 중 일 때
     new_playtime = parseInt(player.getCurrentTime());
@@ -284,16 +292,13 @@ var autoPlay = function(){
         
         // 스크롤 이동 & 색상 표시
         $("textarea.timelne_textarea").each(function (index, item) {
+            focus = item.parentElement.parentElement.parentElement;
+            focusTime = item.parentElement.parentElement.parentElement.offsetTop;
+
             if(get_time(item.value) == new_playtime){
-                if(document.querySelectorAll('.active').length > 0){
-                    active = document.querySelector('.active');
-                    focus.setAttribute('style', '');
-                    active.classList.remove('active');
-                }
+                clear_active()
                 let top = document.querySelector(".list-group-item").offsetTop;
                 let height = document.querySelector(".list-group-item").offsetHeight;
-                focus = item.parentElement.parentElement.parentElement;
-                focusTime = item.parentElement.parentElement.parentElement.offsetTop;
                 document.querySelector(".table").scrollTop = focusTime - top - height*2;
                 focus.classList.add('active');
             };
